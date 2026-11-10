@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Moving Line</title>
+<style>
+  html,body{margin:0;height:100%;background:#1d1d1f;display:flex;align-items:center;justify-content:center}
+  canvas{width:min(100vw,177.78vh);aspect-ratio:16/9;background:#fbf7ee;cursor:pointer;display:block}
+</style>
+</head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>
+// "The Moving Line" — a doodle short film. Everything is drawn in code with a wobbly pen.
+const c=document.getElementById('c'),x=c.getContext('2d');
+x.scale(2,2);x.lineCap=x.lineJoin='round';
+const ink='#2b2b2b',paper='#fbf7ee',Y='#ffd23f',R='#e4572e',PI=Math.PI;
+const FONT='"Comic Sans MS","Bradley Hand","Segoe Print","Chalkboard SE",cursive';
+let k=0,seed=0;
+// jitter: same wobble for a whole "boil" frame, re-rolled ~7x a second
+const J=(a=1.6)=>{k++;const v=Math.sin(k*127.1+seed*311.7)*43758.5453;return(v-Math.floor(v)-.5)*2*a};
+const cl=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+const ease=p=>{p=cl(p);return p*p*(3-2*p)};
+const seg=(p,a,b)=>cl((p-a)/(b-a));
+const grey=v=>{const g=43+110*cl(v)|0;return`rgb(${g},${g},${g})`};
+
+function L(x1,y1,x2,y2,w=3){const n=Math.max(2,Math.hypot(x2-x1,y2-y1)/22|0);x.beginPath();x.moveTo(x1+J(),y1+J());
+  for(let i=1;i<=n;i++)x.lineTo(x1+(x2-x1)*i/n+J(),y1+(y2-y1)*i/n+J());x.lineWidth=w;x.stroke()}
+function O(cx,cy,rx,fill,ry=rx,a1=6.3,w=3){x.beginPath();const n=18;
+  for(let i=0;i<=n*a1/6.3;i++){const a=6.3*i/n-1.6;x.lineTo(cx+Math.cos(a)*rx+J(),cy+Math.sin(a)*ry+J())}
+  if(fill){x.fillStyle=fill;x.fill()}x.lineWidth=w;x.stroke()}
+function T(s,px,py,size,align='center',col=ink){x.font=size+'px '+FONT;x.textAlign=align;x.fillStyle=col;x.fillText(s,px,py)}
+function S(cx,cy,r,fill){x.beginPath();for(let i=0;i<=10;i++){const a=i*PI/5-PI/2,q=i%2?r*.45:r;x.lineTo(cx+Math.cos(a)*q+J(1),cy+Math.sin(a)*q+J(1))}
+  x.fillStyle=fill;x.fill();x.lineWidth=2.5;x.stroke()}
+function Hh(cx,cy,r,fill){x.beginPath();x.moveTo(cx,cy+r);x.bezierCurveTo(cx-r*2,cy-r*.4,cx-r*.6,cy-r*1.6,cx,cy-r*.5);
+  x.bezierCurveTo(cx+r*.6,cy-r*1.6,cx+r*2,cy-r*.4,cx,cy+r);x.fillStyle=fill;x.fill();x.lineWidth=2;x.stroke()}
+function Rr(a,b,w,h,fill){x.fillStyle=fill;x.fillRect(a,b,w,h);L(a,b,a+w,b);L(a+w,b,a+w,b+h);L(a+w,b+h,a,b+h);L(a,b+h,a,b)}
+function B(bx,by,s,a=1){if(a<=0)return;x.globalAlpha=a;x.font='19px '+FONT;const w=x.measureText(s).width+26;
+  Rr(bx-w/2,by-20,w,36,'#fff');T(s,bx,by+5,19);x.globalAlpha=1}
+const fade=(p,a,b)=>Math.min(seg(p,a,a+.05),1-seg(p,b-.05,b));
+
+// a stick person. py = feet.
+function P(px,py,s,o={}){const col=o.col||ink;x.strokeStyle=col;
+  const hip=py-26*s,sh=hip-28*s,hy=sh-13*s,w=Math.sin(o.walk||0)*8*s,d=o.dir||1,a=o.arms;
+  if(o.glow){x.fillStyle=`rgba(255,210,63,${o.glow*.45})`;x.beginPath();x.arc(px,sh+12*s,(40+J(2))*s*o.glow,0,7);x.fill()}
+  L(px,hip,px-9*s+w,py);L(px,hip,px+9*s-w,py);L(px,hip,px,sh);
+  if(a=='up'){L(px,sh+4*s,px-14*s,hy-22*s);L(px,sh+4*s,px+14*s,hy-22*s)}
+  else if(a=='hold'){L(px,sh+4*s,px+d*30*s,sh-40*s);L(px,sh+4*s,px-d*12*s,sh+26*s)}
+  else if(a=='hip')for(const e of[-1,1]){L(px,sh+4*s,px+e*17*s,sh+16*s);L(px+e*17*s,sh+16*s,px+e*3*s,hip-2*s)}
+  else{const r=o.slump?5:12;L(px,sh+4*s,px-r*s,sh+26*s);L(px,sh+4*s,px+r*s,sh+26*s)}
+  O(px,hy,12*s,paper);
+  x.fillStyle=col;for(const e of[-1,1]){x.beginPath();x.arc(px+e*4*s,hy-2*s,1.7*s,0,7);x.fill()}
+  const m=o.mood??1;x.beginPath();
+  if(m>0)x.arc(px,hy+1*s,5*s,.15*PI,.85*PI);else if(m<0)x.arc(px,hy+9*s,5*s,1.2*PI,1.8*PI);
+  else{x.moveTo(px-4*s,hy+5*s);x.lineTo(px+4*s,hy+5*s)}
+  x.lineWidth=2;x.stroke();
+  if(o.tie){x.beginPath();x.moveTo(px-4*s,sh+2*s);x.lineTo(px+4*s,sh+2*s);x.lineTo(px,sh+20*s);x.closePath();x.fillStyle=R;x.fill()}
+  if(o.heart)Hh(px,sh+12*s,6*s,R);
+  if(o.chest)S(px,sh+12*s,9*s,Y);
+  if(o.star)S(px,py-103*s,14,o.star);
+  x.strokeStyle=ink}
+
+// the two "big" ones: one wears a tie, one wears a heart.
+function bigs(s,arms,mood,dx=0){P(170-dx,470,s,{tie:1,arms,dir:1,mood});P(790+dx,470,s,{heart:1,arms,dir:-1,mood})}
+const ground=()=>L(40,470,920,470);
+function dline(y,a=1){x.globalAlpha=a;x.strokeStyle=R;for(let i=340;i<620;i+=24)L(i,y,i+14,y);x.strokeStyle=ink;T('enough',628,y+6,20,'left',R);x.globalAlpha=1}
+function strings(y,s){if(s<=0)return;L(340,y,340+(221-340)*s,y+(310-y)*s,1.5);L(620,y,620+(739-620)*s,y+(310-y)*s,1.5)}
+const LAB=['sure!','extra','late','favor','weekend','sorry','again','always'];
+function boxes(n,t,sway=0){for(let i=0;i<n;i++){const bx=480+Math.sin(t*2+i*.6)*sway*i;Rr(bx-45,470-26*(i+1),90,26,'#fff');T(LAB[i],bx,470-26*i-8,14,'center','#777')}}
+function ring(p){if(p<=0)return;x.strokeStyle=Y;O(480,470,74,0,15,6.3*p,5);x.strokeStyle=ink}
+const ASK=['one more thing…','you’re so good at it!','you don’t mind, right?','by friday?','if you really cared…','just this once','we’re a family here','be a team player','more.'];
+
+const SC=[
+ {d:6,caps:[],f(p,t){ground();T('the moving line',480,230,64);T('a doodle about being “enough”',480,280,24,'center','#777');
+   P(-30+130*p,470,1,{arms:'up',star:Y,walk:t*8})}},
+ {d:9,caps:[[0,.47,'Once, there was someone who always gave a little extra.'],[.5,1,'And oh, it felt good to be seen.']],
+  f(p,t){ground();bigs(1.7,0,1);dline(352);const m=seg(p,0,.42);
+   P(100+380*ease(m),470,1,{arms:'up',star:Y,walk:m<1?t*8:0});
+   if(p>.48){for(let i=0;i<6;i++){const a=i*1.05+t;L(480+Math.cos(a)*24,367+Math.sin(a)*24,480+Math.cos(a)*34,367+Math.sin(a)*34,2)}
+    B(170,290,'nice work!',fade(p,.5,.95));B(790,290,'aww, you’re the best',fade(p,.58,.95));
+    const h=seg(p,.5,1);x.globalAlpha=1-h;Hh(520,330-h*60,8,R);x.globalAlpha=1}}},
+ {d:15,caps:[[0,.3,'So they gave a little more.'],[.33,.62,'And the line moved.'],[.66,1,'And moved. And moved.']],
+  f(p,t){const q=p*(.6+.4*p)*8.999,n=q|0,f=q-n,feet=470-26*n;ground();
+   if(n%2){O(70,70,22,'#ddd');x.fillStyle=paper;x.beginPath();x.arc(80,64,20,0,7);x.fill()}
+   else{O(70,70,20,Y);for(let i=0;i<8;i++){const a=i*PI/4+t*.5;L(70+Math.cos(a)*28,70+Math.sin(a)*28,70+Math.cos(a)*38,70+Math.sin(a)*38,2)}}
+   bigs(1.7,'hold',1);boxes(n,t);dline(feet-118-ease(seg(f,.3,.6))*30);
+   P(480,feet,1,{arms:'up',star:n<5?Y:'#f3e3a0',mood:n<3?1:n<6?0:-1,col:grey(n/9)});
+   B(n%2?790:170,290,ASK[n],fade(f,.25,1))}},
+ {d:9,caps:[[0,.5,'The more they gave, the more was expected.'],[.53,1,'“Enough” was a moving target.']],
+  f(p,t){ground();bigs(1.7,'hold',1);boxes(8,t,1.2);dline(114);const hx=480+Math.sin(t*2+4.8)*9.6;
+   P(hx,262,1,{slump:1,mood:-1,col:grey(.85)});S(hx+18,236,9,'#e5e5e5');
+   x.strokeStyle='#666';for(let i=0;i<7;i++)L(hx+J(22),160+J(12),hx+J(22),160+J(12),2);x.strokeStyle=ink;
+   B(170,290,'more.',fade(p,.1,.9));B(790,290,'a little more.',fade(p,.25,.9))}},
+ {d:10,caps:[[0,.42,'One day, too tired to climb, they stopped.'],[.46,1,'And saw it. The line was never theirs to reach.']],
+  f(p,t){const nf=8*(1-ease(seg(p,0,.32)));ground();bigs(1.7,'hold',p>.7?0:1);boxes(nf|0,t);
+   dline(114);strings(114,ease(seg(p,.46,.7)));
+   P(480,470-26*nf,1,{slump:1,mood:p>.7?0:-1,col:grey(.85)});if(nf<.1)S(522,458,10,'#e5e5e5');
+   if(p>.36&&p<.7)T('?',480,372,30);if(p>=.7)T('!',480,372,34,'center',R)}},
+ {d:10,caps:[[0,.42,'So they tried a very small word.'],[.46,1,'And drew a line of their own.']],
+  f(p,t){const fall=ease(seg(p,.6,.9));ground();bigs(1.7,fall?0:'hold',0);
+   dline(114+fall*340,1-fall);if(!fall)strings(114,1);ring(ease(seg(p,.46,.8)));
+   P(480,470,1,{mood:0,col:grey(.85-.4*p)});S(522,458,10,'#e5e5e5');
+   B(480,350,'no.',fade(p,.06,.45));B(170,290,'but you always—',fade(p,.2,.55));B(790,290,'you’ve changed.',fade(p,.3,.6))}},
+ {d:12,caps:[[0,.3,'Then they went above and beyond — for themself.'],[.34,.64,'The world called it confidence.'],[.68,1,'It was just love, finally pointed home.']],
+  f(p,t){const m=ease(seg(p,.04,.28)),sc=1.7-.7*ease(seg(p,.4,.75));ground();bigs(sc,0,p>.75?1:0,40*ease(seg(p,.4,.75)));ring(1);
+   P(480,470,1,{mood:m<1?0:1,col:grey(.45*(1-m)),arms:p>.4?'hip':0,chest:m>=1,glow:ease(seg(p,.28,.5))});
+   if(m<1)S(522-42*m,458-30*m,10,m>.3?Y:'#e5e5e5');
+   B(130,330,'…oh.',fade(p,.5,.8))}},
+ {d:9,caps:[],f(p,t){ground();bigs(1,0,1,40);ring(1);P(480,470,1,{arms:'hip',chest:1,glow:1});
+   x.globalAlpha=seg(p,0,.15);T('you were always enough.',480,180,48);
+   x.globalAlpha=seg(p,.2,.35);T('be generous. just not at your own expense.',480,228,24,'center','#666');
+   x.globalAlpha=seg(p,.6,.75);T('tap to watch again',480,524,16,'center','#999');x.globalAlpha=1}}
+];
+const TOTAL=SC.reduce((a,s)=>a+s.d,0);
+let t=+new URLSearchParams(location.search).get('t')||0,last=0,play=true;
+
+function frame(now){
+  const dt=Math.min(.1,(now-last)/1000);last=now;if(play&&t<TOTAL)t=Math.min(TOTAL,t+dt);
+  seed=Math.floor(now/140);k=0;
+  x.fillStyle=paper;x.fillRect(0,0,960,540);
+  x.lineWidth=1;x.strokeStyle='#dbe7f3';x.beginPath();for(let y=45;y<540;y+=30){x.moveTo(0,y);x.lineTo(960,y)}x.stroke();
+  x.strokeStyle='#f3c9c4';x.beginPath();x.moveTo(52,0);x.lineTo(52,540);x.stroke();x.strokeStyle=ink;
+  let i=0,u=t;while(i<SC.length-1&&u>=SC[i].d){u-=SC[i].d;i++}
+  const s=SC[i],p=cl(u/s.d);s.f(p,t);
+  for(const[a,b,txt]of s.caps){const al=fade(p,a,b);if(al>0){x.globalAlpha=al;T(txt,480,518,25);x.globalAlpha=1}}
+  x.fillStyle=R;x.fillRect(0,537,960*t/TOTAL,3);
+  if(!play){x.fillStyle='rgba(0,0,0,.35)';x.fillRect(0,0,960,540);T('paused — tap to play',480,270,30,'center','#fff')}
+  requestAnimationFrame(frame)}
+c.onclick=()=>{if(t>=TOTAL){t=0;play=true}else play=!play};
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
