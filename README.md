@@ -1,5 +1,10 @@
-# The Moving Line
+# Ember
 
-A ~80 second doodle short film about giving until "enough" keeps moving, and learning to draw your own line.
+A wordless animated short (about 2 minutes 15 seconds). Picture and sound are both generated in one file.
 
-Open `index.html` in any browser. Tap to pause/play; tap at the end to replay. No build, no dependencies.
+Open `index.html` in any browser and click the spark to start.
+
+- Click or Space: pause / play
+- Left / Right arrows: skip 5 seconds
+
+No build, no dependencies.
